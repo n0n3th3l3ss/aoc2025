@@ -11,7 +11,7 @@ case class SafeRotator(
     max: Long,
     currentRotation: Long
 ) {
-  private val cycle = max - min
+  val cycle = max - min
 
   def rotate(command: RotateCommand): SafeRotator = rotate(Seq(command))
 
