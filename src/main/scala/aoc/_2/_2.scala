@@ -19,8 +19,8 @@ object _2 extends IOApp.Simple {
       )
       idRanges <- EitherT.fromEither(_2_InputParser.parse(line))
       idSequences = idRanges.flatMap(_.idSequence())
-      repeatedTwice = idSequences.filter(IdChecker.isRepeatedAtLeastTwice)
-      sum = repeatedTwice.map(_.toLong).sum
+      repeatedAtLeastTwice = idSequences.filter(IdChecker.isRepeatedAtLeastTwice)
+      sum = repeatedAtLeastTwice.map(_.toLong).sum
     } yield sum).value.flatMap {
       case Left(err) => IO.println(err.getStackTrace.mkString)
       case Right(value) => IO.println(value)
