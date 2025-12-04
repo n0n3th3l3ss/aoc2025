@@ -1,5 +1,7 @@
 package aoc._4
 
+import scala.annotation.tailrec
+
 object AdjacentPaperChecker {
 
   def markFewerThanAdjacent(
@@ -42,8 +44,38 @@ object AdjacentPaperChecker {
         }
       }
     }
-
   }
+
+  def countAccessiblePaperWithRemoveRule(
+      matrix: Vector[Vector[Char]],
+      maxAdjacent: Int
+  ): Int = {
+
+    @tailrec
+    def loop(aMatrix: Vector[Vector[Char]], acc: Int): Int = {
+      val markedGrid = markFewerThanAdjacent(aMatrix, maxAdjacent)
+      val newAcc = acc + countMarked(markedGrid)
+      val gridAfterRemoveMarkedPaper = removeMarkedPaper(markedGrid)
+
+      if aMatrix == gridAfterRemoveMarkedPaper then acc
+      else loop(gridAfterRemoveMarkedPaper, newAcc)
+    }
+
+    loop(matrix, 0)
+  }
+
+  private def countMarked(matrix: Vector[Vector[Char]]): Int =
+    matrix.flatten.count(_ == 'x')
+
+  private def removeMarkedPaper(
+      matrix: Vector[Vector[Char]]
+  ): Vector[Vector[Char]] =
+    matrix.map { line =>
+      line.map { cell =>
+        if cell == 'x' then '.'
+        else cell
+      }
+    }
 
   private def getAdjacent(
       checkLineIndex: Int,
@@ -64,4 +96,5 @@ object AdjacentPaperChecker {
       (prevLeft, prev, prevRight)
     }
   }
+
 }
