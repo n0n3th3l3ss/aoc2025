@@ -32,7 +32,7 @@ object DistanceMeasurer {
         innerMap.iterator.map { case (to, dist) => (from, to, dist) }
       }
       .toList
-      .distinctBy((_, _, dist) => dist)
+      .distinctBy((j1, j2, _) => Set(j1, j2))
       .sortBy((_, _, dist) => dist)
 
     @tailrec
@@ -81,5 +81,85 @@ object DistanceMeasurer {
     }
 
     innerConnection(sortedByDist, Vector.empty, maxConnections - 1)
+  }
+
+  def connectIntoOneCircuit(
+      boxes: Vector[JunctionBox]
+  ): Option[(Node, Node)] = {
+    val boxToDistancesToOtherBoxes = findAllDistances(boxes)
+
+    val sortedByDist = boxToDistancesToOtherBoxes.iterator
+      .flatMap { case (from, innerMap) =>
+        innerMap.iterator.map { case (to, dist) => (from, to, dist) }
+      }
+      .toList
+      .distinctBy((j1, j2, _) => Set(j1, j2))
+      .sortBy((_, _, dist) => dist)
+
+    @tailrec
+    def innerConnectionIntoOneCircuit(
+        boxes: List[(JunctionBox, JunctionBox, Distance)],
+        circuits: Vector[Circuit],
+        lastConnected: Option[(Node, Node)]
+    ): Option[(Node, Node)] = {
+      boxes match {
+        case Nil => lastConnected
+        case (from, to, _) :: tail =>
+          val nodeFrom = Node(from)
+          val nodeTo = Node(to)
+
+          if circuits.exists { circuit =>
+              circuit.contains(nodeFrom) && circuit.contains(nodeTo)
+            }
+          then innerConnectionIntoOneCircuit(tail, circuits, lastConnected)
+          else {
+
+            val containsNodeFrom = circuits.find { circuit =>
+              circuit.contains(nodeFrom)
+            }
+            val containsNodeTo = circuits.find { circuits =>
+              circuits.contains(nodeTo)
+            }
+
+            val (newCircuits, lastConnected) =
+              (containsNodeFrom, containsNodeTo) match {
+                case (Some(from), Some(to)) =>
+                  val newCircuit = from.merge(to)
+                  (
+                    circuits.filter(_ != from).filter(_ != to) :+ newCircuit,
+                    Some((nodeFrom, nodeTo))
+                  )
+                case (Some(from), None) =>
+                  val newCircuit = from.appended(nodeTo)
+                  (
+                    circuits.filter(_ != from) :+ newCircuit,
+                    Some((nodeFrom, nodeTo))
+                  )
+                case (None, Some(to)) =>
+                  val newCircuit = to.appended(nodeFrom)
+                  (
+                    circuits.filter(_ != to) :+ newCircuit,
+                    Some((nodeFrom, nodeTo))
+                  )
+                case _ =>
+                  (
+                    circuits :+ Circuit(Vector(nodeTo, nodeFrom)),
+                    Some((nodeFrom, nodeTo))
+                  )
+              }
+            innerConnectionIntoOneCircuit(
+              tail,
+              newCircuits,
+              lastConnected
+            )
+          }
+      }
+    }
+
+    innerConnectionIntoOneCircuit(
+      sortedByDist,
+      Vector.empty,
+      None
+    )
   }
 }
